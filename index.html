@@ -1,0 +1,1794 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AP Biology: Enzyme Function & Inhibition Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b1120;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom Range Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            height: 8px;
+            border-radius: 999px;
+            background: #1e293b;
+            border: 1px solid #334155;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #f8fafc;
+            border: 2px solid #38bdf8;
+            margin-top: -6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+            transition: transform 0.15s ease, background-color 0.15s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            background: #38bdf8;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.75);
+        }
+        .preset-btn.active {
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            border-color: #38bdf8;
+            color: white;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.35);
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-sky-500 selection:text-white">
+
+    <!-- Top Navigation & Mode Bar -->
+    <header class="border-b border-slate-800 bg-slate-900/90 sticky top-0 z-30 px-4 py-2.5 shadow-lg">
+        <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-3">
+            <!-- Brand & Title -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center shadow-md shadow-emerald-900/50 border border-emerald-400/30">
+                    <!-- Custom Enzyme Icon -->
+                    <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2a10 10 0 1 0 10 10H12V2z" fill="currentColor" fill-opacity="0.25"/>
+                        <path d="M12 2a10 10 0 1 0 10 10L15 12l4-7a10 10 0 0 0-7-3z" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="9" cy="15" r="1.5" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-extrabold tracking-tight text-white">Enzyme Catalysis</h1>
+                </div>
+            </div>
+
+            <!-- View Mode Switcher -->
+            <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+                <button id="modePopulationBtn" onclick="switchViewMode('population')" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-sky-600 text-white shadow">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="8" cy="8" r="3" stroke-width="2"/><circle cx="16" cy="15" r="3" stroke-width="2"/><circle cx="17" cy="7" r="2" stroke-width="2"/><circle cx="7" cy="17" r="2" stroke-width="2"/></svg>
+                    1. Population Solution View
+                </button>
+                <button id="modeInspectorBtn" onclick="switchViewMode('inspector')" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-400 hover:text-white">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
+                    2. Step-by-Step Molecular Inspector
+                </button>
+            </div>
+
+            <!-- Simulation Playback Controls -->
+            <div class="flex items-center gap-2">
+                <button id="playPauseBtn" onclick="togglePlayPause()" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs sm:text-sm shadow transition">
+                    <span id="playPauseIcon">⏸</span>
+                    <span id="playPauseText">Pause</span>
+                </button>
+                <button onclick="resetReaction()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold text-xs sm:text-sm transition">
+                    <span>↺</span> Reset Reaction
+                </button>
+                <div class="hidden md:flex items-center gap-1.5 bg-slate-950 px-2.5 py-1 rounded-xl border border-slate-800 text-xs">
+                    <span class="text-slate-400">Speed:</span>
+                    <select id="simSpeedSelect" onchange="changeSimSpeed(this.value)" class="bg-transparent text-sky-400 font-bold focus:outline-none cursor-pointer">
+                        <option value="0.5" class="bg-slate-900">0.5x (Slow-Mo)</option>
+                        <option value="1" selected class="bg-slate-900">1.0x (Normal)</option>
+                        <option value="1.8" class="bg-slate-900">1.8x (Fast)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Dashboard Grid -->
+    <main class="flex-1 max-w-[1600px] w-full mx-auto p-3 sm:p-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+        <!-- LEFT COLUMN: Quick Presets, Concentrations & Legend (3 cols) -->
+        <section class="lg:col-span-3 flex flex-col gap-3.5">
+            
+            <!-- Scenario Presets Card -->
+            <div class="glass-panel rounded-2xl p-3.5 shadow-xl">
+                <div class="flex items-center justify-between mb-2.5">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-sky-400 flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        Scenario Presets
+                    </h2>
+                    <span class="text-[11px] text-slate-400">Click to load</span>
+                </div>
+                <div class="grid grid-cols-1 gap-1.5">
+                    <button id="preset-normal" onclick="loadPreset('normal')" class="preset-btn active text-left px-3 py-2 rounded-xl border border-slate-700/80 bg-slate-800/60 hover:bg-slate-800 text-xs font-semibold transition flex items-center justify-between">
+                        <span>1. Normal Catalysis (No Inhibitor)</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Control</span>
+                    </button>
+                    <button id="preset-competitive" onclick="loadPreset('competitive')" class="preset-btn text-left px-3 py-2 rounded-xl border border-slate-700/80 bg-slate-800/60 hover:bg-slate-800 text-xs font-semibold transition flex items-center justify-between">
+                        <span>2. + Competitive Inhibitor</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">Active Site</span>
+                    </button>
+                    <button id="preset-overcome" onclick="loadPreset('overcome')" class="preset-btn text-left px-3 py-2 rounded-xl border border-slate-700/80 bg-slate-800/60 hover:bg-slate-800 text-xs font-semibold transition flex items-center justify-between">
+                        <span>3. High [S] vs. Competitive</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300">Outcompetes</span>
+                    </button>
+                    <button id="preset-noncompetitive" onclick="loadPreset('noncompetitive')" class="preset-btn text-left px-3 py-2 rounded-xl border border-slate-700/80 bg-slate-800/60 hover:bg-slate-800 text-xs font-semibold transition flex items-center justify-between">
+                        <span>4. + Non-Competitive Inhibitor</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-fuchsia-500/20 text-fuchsia-300">Allosteric</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Concentration Sliders & Quick Injection Card -->
+            <div class="glass-panel rounded-2xl p-3.5 shadow-xl flex-1 flex flex-col justify-between gap-3">
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">Solution Concentrations</h2>
+                        <button onclick="injectSubstrateBurst()" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/40 text-sky-300 text-xs font-bold transition shadow-sm flex items-center gap-1" title="Test if adding more substrate overcomes inhibition!">
+                            <span>+15 [S] Burst</span>
+                        </button>
+                    </div>
+
+                    <div class="space-y-3.5">
+                        <!-- Enzyme Slider -->
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="font-semibold text-emerald-400 flex items-center gap-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span>
+                                    [Enzyme] Total
+                                </span>
+                                <span id="valEnzyme" class="mono font-bold text-white">6</span>
+                            </div>
+                            <input id="sliderEnzyme" type="range" min="2" max="10" value="6" oninput="updateFromSliders('enzyme', this.value)" class="w-full">
+                        </div>
+
+                        <!-- Substrate Slider -->
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="font-semibold text-sky-400 flex items-center gap-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-sm bg-sky-400 inline-block rotate-45"></span>
+                                    [Substrate] Initial / Free
+                                </span>
+                                <span id="valSubstrate" class="mono font-bold text-white">30</span>
+                            </div>
+                            <input id="sliderSubstrate" type="range" min="5" max="80" value="30" oninput="updateFromSliders('substrate', this.value)" class="w-full">
+                        </div>
+
+                        <!-- Competitive Inhibitor Slider -->
+                        <div class="p-2.5 rounded-xl bg-amber-950/25 border border-amber-500/30">
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="font-semibold text-amber-400 flex items-center gap-1.5">
+                                    <span class="w-2.5 h-2.5 bg-amber-400 inline-block" style="clip-path: polygon(50% 0%, 0% 100%, 100% 100%);"></span>
+                                    [Competitive Inhibitor]
+                                </span>
+                                <span id="valComp" class="mono font-bold text-amber-300">0</span>
+                            </div>
+                            <input id="sliderComp" type="range" min="0" max="50" value="0" oninput="updateFromSliders('comp', this.value)" class="w-full">
+                            <p class="text-[11px] text-amber-200/70 mt-1 leading-tight">Mimics substrate shape; competes directly for the <strong>Active Site</strong>.</p>
+                        </div>
+
+                        <!-- Non-Competitive Inhibitor Slider -->
+                        <div class="p-2.5 rounded-xl bg-fuchsia-950/25 border border-fuchsia-500/30">
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="font-semibold text-fuchsia-400 flex items-center gap-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-fuchsia-400 inline-block"></span>
+                                    [Non-Competitive Inhibitor]
+                                </span>
+                                <span id="valNonComp" class="mono font-bold text-fuchsia-300">0</span>
+                            </div>
+                            <input id="sliderNonComp" type="range" min="0" max="30" value="0" oninput="updateFromSliders('noncomp', this.value)" class="w-full">
+                            <p class="text-[11px] text-fuchsia-200/70 mt-1 leading-tight">Binds <strong>Allosteric Site</strong>; changes Active Site conformation so substrate bounces off!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visual Molecular Key / Legend -->
+                <div class="border-t border-slate-800 pt-3">
+                    <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Interactive Visual Legend</div>
+                    <div class="grid grid-cols-2 gap-2 text-[11px]">
+                        <div class="flex items-center gap-2 bg-slate-900/80 p-1.5 rounded-lg border border-slate-800">
+                            <span class="w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-emerald-200 shrink-0"></span>
+                            <div>
+                                <div class="font-semibold text-slate-200">Active Enzyme</div>
+                                <div class="text-[10px] text-slate-400">V-Notch Active Site</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 bg-slate-900/80 p-1.5 rounded-lg border border-slate-800">
+                            <span class="w-3.5 h-3.5 rounded-full bg-purple-600 border-2 border-fuchsia-300 shrink-0"></span>
+                            <div>
+                                <div class="font-semibold text-fuchsia-300">Allosteric E-I</div>
+                                <div class="text-[10px] text-slate-400">Warped Active Site</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 bg-slate-900/80 p-1.5 rounded-lg border border-slate-800">
+                            <span class="w-3.5 h-3.5 bg-sky-400 rotate-45 shrink-0 rounded-xs"></span>
+                            <div>
+                                <div class="font-semibold text-sky-300">Substrate (S)</div>
+                                <div class="text-[10px] text-slate-400">Fits V-Active Site</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 bg-slate-900/80 p-1.5 rounded-lg border border-slate-800">
+                            <div class="flex gap-0.5 shrink-0">
+                                <span class="w-2 h-2 rounded-full bg-lime-400"></span>
+                                <span class="w-2 h-2 rounded-full bg-teal-300"></span>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-lime-300">Products (P₁+P₂)</div>
+                                <div class="text-[10px] text-slate-400">Catalyzed Output</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CENTER COLUMN: Interactive Molecular Canvas & Enzyme State Breakdown (5 cols) -->
+        <section class="lg:col-span-5 flex flex-col gap-3.5">
+            
+            <!-- Canvas Card -->
+            <div class="glass-panel rounded-2xl p-3 shadow-xl flex-1 flex flex-col min-h-[440px] relative">
+                <!-- Top Overlay Bar inside Canvas Card -->
+                <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 mb-2 border-b border-slate-800">
+                    <div class="flex items-center gap-2">
+                        <span id="canvasModeBadge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                            Live Reaction Chamber
+                        </span>
+                        <span id="simTimerDisplay" class="mono text-xs text-slate-400">t = 0.0s</span>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs">
+                        <label class="flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white select-none">
+                            <input type="checkbox" id="toggleLabelsChk" checked onchange="toggleSiteLabels(this.checked)" class="rounded bg-slate-800 border-slate-600 text-sky-500 focus:ring-0">
+                            <span>Show Site Labels</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white select-none" title="Automatically respawn substrate when catalyzed so steady-state rate V0 can be observed continuously">
+                            <input type="checkbox" id="steadyStateChk" onchange="toggleSteadyState(this.checked)" class="rounded bg-slate-800 border-slate-600 text-emerald-500 focus:ring-0">
+                            <span>Keep [S] Constant (Steady-State)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Step-by-Step Inspector Sub-Toolbar (Hidden in Population View) -->
+                <div id="inspectorToolbar" class="hidden mb-2.5 p-2 rounded-xl bg-slate-900 border border-sky-500/40 flex flex-wrap items-center justify-between gap-2">
+                    <div class="text-xs font-semibold text-sky-300">Select Mechanism to Inspect Up-Close:</div>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button id="inspBtn1" onclick="setInspectorScenario('normal')" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow">1. Normal Catalysis</button>
+                        <button id="inspBtn2" onclick="setInspectorScenario('competitive')" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-800 text-amber-300 hover:bg-slate-700">2. Competitive Block</button>
+                        <button id="inspBtn3" onclick="setInspectorScenario('noncompetitive')" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-800 text-fuchsia-300 hover:bg-slate-700">3. Non-Competitive Morph</button>
+                    </div>
+                </div>
+
+                <!-- Main Simulation Canvas Wrapper -->
+                <div class="relative flex-1 w-full bg-slate-950 rounded-xl overflow-hidden border border-slate-800 shadow-inner min-h-[340px]">
+                    <canvas id="simCanvas"></canvas>
+
+                    <!-- Floating Live Counters on Canvas Top-Left -->
+                    <div id="liveCountersOverlay" class="absolute top-2.5 left-2.5 flex flex-wrap gap-1.5 pointer-events-none">
+                        <div class="px-2.5 py-1 rounded-lg bg-slate-900/85 border border-slate-700/80 text-xs backdrop-blur-sm">
+                            <span class="text-slate-400">Free [S]:</span>
+                            <span id="countSubstrate" class="mono font-bold text-sky-400 ml-1">30</span>
+                        </div>
+                        <div class="px-2.5 py-1 rounded-lg bg-slate-900/85 border border-slate-700/80 text-xs backdrop-blur-sm">
+                            <span class="text-slate-400">Products [P]:</span>
+                            <span id="countProduct" class="mono font-bold text-lime-400 ml-1">0</span>
+                        </div>
+                        <div class="px-2.5 py-1 rounded-lg bg-slate-900/85 border border-slate-700/80 text-xs backdrop-blur-sm">
+                            <span class="text-slate-400">Rate (V):</span>
+                            <span id="countRate" class="mono font-bold text-emerald-400 ml-1">0.0 /s</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Enzyme Occupancy Distribution Bar -->
+                <div class="mt-3 pt-2 border-t border-slate-800">
+                    <div class="flex justify-between items-center text-xs mb-1.5">
+                        <span class="font-bold text-slate-300 uppercase tracking-wider text-[11px]">Real-Time Enzyme State Breakdown</span>
+                        <div class="flex flex-wrap gap-3 text-[11px]">
+                            <span class="flex items-center gap-1 text-emerald-400"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Free (E): <strong id="pctFree" class="mono">100%</strong></span>
+                            <span class="flex items-center gap-1 text-sky-400"><span class="w-2 h-2 rounded-full bg-sky-400"></span> E-S Complex: <strong id="pctES" class="mono">0%</strong></span>
+                            <span class="flex items-center gap-1 text-amber-400"><span class="w-2 h-2 rounded-full bg-amber-500"></span> Comp Blocked (E-I): <strong id="pctComp" class="mono">0%</strong></span>
+                            <span class="flex items-center gap-1 text-fuchsia-400"><span class="w-2 h-2 rounded-full bg-fuchsia-500"></span> Allosteric (E-I): <strong id="pctNonComp" class="mono">0%</strong></span>
+                        </div>
+                    </div>
+                    <div class="w-full h-3 bg-slate-900 rounded-full overflow-hidden flex border border-slate-800 p-0.5 gap-0.5">
+                        <div id="barFree" class="h-full bg-emerald-500 transition-all duration-200 rounded-l-full" style="width: 100%"></div>
+                        <div id="barES" class="h-full bg-sky-400 transition-all duration-200" style="width: 0%"></div>
+                        <div id="barComp" class="h-full bg-amber-500 transition-all duration-200" style="width: 0%"></div>
+                        <div id="barNonComp" class="h-full bg-fuchsia-500 transition-all duration-200 rounded-r-full" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- RIGHT COLUMN: Real-Time Kinetics Graph Selector (4 cols) -->
+        <section class="lg:col-span-4 flex flex-col gap-3.5">
+
+            <div class="glass-panel rounded-2xl p-3.5 shadow-xl flex-1 flex flex-col">
+                <!-- Dropdown Selector Header -->
+                <div class="flex flex-col gap-2 pb-3 mb-3 border-b border-slate-800">
+                    <label for="graphSelect" class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Select Graph View</label>
+                    <select id="graphSelect" onchange="switchGraphView(this.value)" class="w-full bg-slate-900 border border-slate-700 hover:border-sky-500/60 rounded-xl px-3 py-2 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-sky-400 transition cursor-pointer shadow-inner">
+                        <option value="product">1. Product Formation vs. Time</option>
+                        <option value="mm">2. Michaelis-Menten Kinetics (V₀ vs. [S])</option>
+                    </select>
+                </div>
+
+                <!-- Graph 1 Panel: Product Formation Over Time -->
+                <div id="panelProductGraph" class="flex-1 flex flex-col">
+                    <div class="flex items-center justify-between mb-2">
+                        <div>
+                            <h2 class="text-xs font-bold uppercase tracking-wider text-lime-400">Product Formation vs. Time</h2>
+                            <p class="text-[11px] text-slate-400">Slope of line = Reaction Rate (V)</p>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="saveBaselineRun()" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-[11px] font-semibold text-slate-200 transition" title="Save current curve as dashed reference line to compare with inhibited runs">
+                                📌 Pin Baseline Curve
+                            </button>
+                            <button onclick="clearBaselineRun()" id="clearBaselineBtn" class="hidden px-2 py-1 rounded-lg bg-slate-800 hover:bg-rose-950 border border-slate-700 text-[11px] text-rose-300 transition">
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                    <div class="relative flex-1 min-h-[300px] bg-slate-950 rounded-xl border border-slate-800 p-2">
+                        <canvas id="productGraphCanvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- Graph 2 Panel: Michaelis-Menten Kinetics Curve (V0 vs [S]) -->
+                <div id="panelMMGraph" class="hidden flex-1 flex flex-col">
+                    <div class="flex items-center justify-between mb-2">
+                        <div>
+                            <h2 class="text-xs font-bold uppercase tracking-wider text-sky-400">Michaelis-Menten Kinetics (V<sub>0</sub> vs. [S])</h2>
+                            <p class="text-[11px] text-slate-400">Shows how inhibitors shift V<sub>max</sub> and apparent K<sub>m</sub></p>
+                        </div>
+                        <div class="flex gap-2 text-[11px] mono">
+                            <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-emerald-300">V<sub>max</sub>: <strong id="statVmax">100%</strong></span>
+                            <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-amber-300">K<sub>m</sub>: <strong id="statKm">15</strong></span>
+                        </div>
+                    </div>
+                    <div class="relative flex-1 min-h-[280px] bg-slate-950 rounded-xl border border-slate-800 p-2">
+                        <canvas id="mmGraphCanvas"></canvas>
+                    </div>
+                    <!-- Mini Kinetics Comparison Table -->
+                    <div class="mt-2.5 grid grid-cols-3 gap-1.5 text-[11px] text-center">
+                        <div class="p-1.5 rounded-lg bg-slate-900/90 border border-slate-800">
+                            <div class="text-slate-400 font-medium">No Inhibitor</div>
+                            <div class="text-emerald-400 font-bold mt-0.5">Normal V<sub>max</sub>, K<sub>m</sub></div>
+                        </div>
+                        <div class="p-1.5 rounded-lg bg-amber-950/20 border border-amber-500/25">
+                            <div class="text-amber-300 font-medium">Competitive</div>
+                            <div class="text-slate-200 font-bold mt-0.5">Same V<sub>max</sub>, ↑ K<sub>m</sub></div>
+                        </div>
+                        <div class="p-1.5 rounded-lg bg-fuchsia-950/20 border border-fuchsia-500/25">
+                            <div class="text-fuchsia-300 font-medium">Non-Competitive</div>
+                            <div class="text-slate-200 font-bold mt-0.5">↓ V<sub>max</sub>, Same K<sub>m</sub></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <script>
+        /***********************************************************************
+         * AP BIOLOGY ENZYME FUNCTION & INHIBITION SIMULATION ENGINE
+         * Models:
+         * - Enzymes with geometric Active Site (V-notch) + Allosteric Site (rear socket)
+         * - Conformational change: Allosteric binding warps Active Site so Substrate bounces off
+         * - Competitive Inhibitor: Binds V-notch Active Site reversibly, blocking Substrate
+         * - Substrate Catalysis: Binds Active Site -> E-S Complex -> splits into 2 Products
+         ***********************************************************************/
+
+        // --- Global Configuration & State ---
+        const state = {
+            viewMode: 'population', // 'population' | 'inspector'
+            inspectorScenario: 'normal', // 'normal' | 'competitive' | 'noncompetitive'
+            running: true,
+            simSpeed: 1.0,
+            showLabels: true,
+            steadyState: false,
+            simTime: 0,
+
+            // Target concentrations from sliders
+            numEnzymes: 6,
+            numSubstrates: 30,
+            numComp: 0,
+            numNonComp: 0,
+
+            // Particle Arrays (Population View)
+            enzymes: [],
+            molecules: [], // { type: 'substrate' | 'comp' | 'noncomp' | 'product1' | 'product2' }
+            floatingEffects: [], // Visual flashes/labels on catalysis or bounce
+
+            // Time-series Data for Graphing
+            history: [], // [{ t, products }]
+            baselineHistory: null, // Saved curve for comparison
+            recentCatalysisTimestamps: [], // For rolling reaction rate calculation
+
+            // Inspector View Single-Enzyme State
+            inspector: {
+                phase: 0,
+                timer: 0,
+                enzymeMorph: 0, // 0 = normal V-notch, 1 = closed/warped active site
+                subPos: { x: 0, y: 0, angle: 0 },
+                compPos: { x: 0, y: 0, angle: 0 },
+                nonCompPos: { x: 0, y: 0 },
+                prod1Pos: { x: 0, y: 0, alpha: 0 },
+                prod2Pos: { x: 0, y: 0, alpha: 0 },
+                statusText: '',
+                subText: ''
+            }
+        };
+
+        // --- Canvas Elements & Contexts ---
+        const simCanvas = document.getElementById('simCanvas');
+        const simCtx = simCanvas.getContext('2d');
+        const prodCanvas = document.getElementById('productGraphCanvas');
+        const prodCtx = prodCanvas.getContext('2d');
+        const mmCanvas = document.getElementById('mmGraphCanvas');
+        const mmCtx = mmCanvas.getContext('2d');
+
+        // --- Resize Handling ---
+        function resizeAllCanvases() {
+            const dpr = window.devicePixelRatio || 1;
+
+            [
+                { canvas: simCanvas, ctx: simCtx },
+                { canvas: prodCanvas, ctx: prodCtx },
+                { canvas: mmCanvas, ctx: mmCtx }
+            ].forEach(({ canvas, ctx }) => {
+                const rect = canvas.parentElement.getBoundingClientRect();
+                canvas.width = Math.max(300, rect.width) * dpr;
+                canvas.height = Math.max(180, rect.height) * dpr;
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            });
+
+            // Keep enzymes inside bounds on resize
+            const w = simCanvas.width / (window.devicePixelRatio || 1);
+            const h = simCanvas.height / (window.devicePixelRatio || 1);
+            state.enzymes.forEach(e => {
+                e.x = Math.min(Math.max(e.r + 10, e.x), w - e.r - 10);
+                e.y = Math.min(Math.max(e.r + 10, e.y), h - e.r - 10);
+            });
+        }
+        window.addEventListener('resize', resizeAllCanvases);
+
+        // --- Particle Factory Functions ---
+        function createEnzyme(x, y) {
+            const w = simCanvas.width / (window.devicePixelRatio || 1) || 600;
+            const h = simCanvas.height / (window.devicePixelRatio || 1) || 380;
+            const r = 34;
+            return {
+                x: x ?? (r + 20 + Math.random() * (w - 2 * r - 40)),
+                y: y ?? (r + 20 + Math.random() * (h - 2 * r - 40)),
+                vx: (Math.random() - 0.5) * 0.55,
+                vy: (Math.random() - 0.5) * 0.55,
+                angle: Math.random() * Math.PI * 2,
+                vAngle: (Math.random() - 0.5) * 0.008,
+                r: r,
+                // Active Site state: null | 'substrate' | 'comp'
+                activeOccupant: null,
+                activeTimer: 0,
+                activeMaxTime: 95, // Frames needed for catalysis or competitive release
+                // Allosteric Site state: null | 'noncomp'
+                allostericOccupant: null,
+                allostericTimer: 0,
+                allostericMaxTime: 220, // Frames non-comp stays bound before reversible unbinding
+                // Smooth animation factor (0 = open V-notch, 1 = warped/closed active site)
+                morphFactor: 0,
+                catalysisFlash: 0
+            };
+        }
+
+        function createMolecule(type, x, y) {
+            const w = simCanvas.width / (window.devicePixelRatio || 1) || 600;
+            const h = simCanvas.height / (window.devicePixelRatio || 1) || 380;
+            const speed = 1.6 + Math.random() * 0.9;
+            const dir = Math.random() * Math.PI * 2;
+            return {
+                type: type, // 'substrate' | 'comp' | 'noncomp' | 'product1' | 'product2'
+                x: x ?? (20 + Math.random() * (w - 40)),
+                y: y ?? (20 + Math.random() * (h - 40)),
+                vx: Math.cos(dir) * speed,
+                vy: Math.sin(dir) * speed,
+                angle: Math.random() * Math.PI * 2,
+                vAngle: (Math.random() - 0.5) * 0.06,
+                cooldown: 0 // Prevents immediate re-binding on release
+            };
+        }
+
+        // --- Initialize / Reset Population Simulation ---
+        function initSimulation() {
+            resizeAllCanvases();
+            state.simTime = 0;
+            state.history = [{ t: 0, products: 0 }];
+            state.recentCatalysisTimestamps = [];
+            state.enzymes = [];
+            state.molecules = [];
+            state.floatingEffects = [];
+
+            const w = simCanvas.width / (window.devicePixelRatio || 1);
+            const h = simCanvas.height / (window.devicePixelRatio || 1);
+
+            // Place enzymes evenly spaced with slight jitter
+            for (let i = 0; i < state.numEnzymes; i++) {
+                const cols = Math.ceil(Math.sqrt(state.numEnzymes * (w / h)));
+                const rows = Math.ceil(state.numEnzymes / cols);
+                const col = i % cols;
+                const row = Math.floor(i / cols);
+                const cellW = w / cols;
+                const cellH = h / rows;
+                const ex = cellW * (col + 0.5) + (Math.random() - 0.5) * 25;
+                const ey = cellH * (row + 0.5) + (Math.random() - 0.5) * 25;
+                state.enzymes.push(createEnzyme(ex, ey));
+            }
+
+            // Spawn Substrates
+            for (let i = 0; i < state.numSubstrates; i++) {
+                state.molecules.push(createMolecule('substrate'));
+            }
+            // Spawn Competitive Inhibitors
+            for (let i = 0; i < state.numComp; i++) {
+                state.molecules.push(createMolecule('comp'));
+            }
+            // Spawn Non-Competitive Inhibitors
+            for (let i = 0; i < state.numNonComp; i++) {
+                state.molecules.push(createMolecule('noncomp'));
+            }
+
+            updateConceptCallout();
+            initInspectorScenario();
+        }
+
+        // --- Dynamic Slider Adjustment Without Full Reset ---
+        function updateFromSliders(kind, rawVal) {
+            const val = parseInt(rawVal, 10);
+            // Clear active highlight on presets when manually tweaking
+            document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+
+            if (kind === 'enzyme') {
+                state.numEnzymes = val;
+                document.getElementById('valEnzyme').textContent = val;
+                while (state.enzymes.length < val) {
+                    state.enzymes.push(createEnzyme());
+                }
+                while (state.enzymes.length > val) {
+                    const removed = state.enzymes.pop();
+                    // Return any bound molecules to solution
+                    if (removed.activeOccupant) state.molecules.push(createMolecule(removed.activeOccupant, removed.x, removed.y));
+                    if (removed.allostericOccupant) state.molecules.push(createMolecule('noncomp', removed.x, removed.y));
+                }
+            } else if (kind === 'substrate') {
+                state.numSubstrates = val;
+                document.getElementById('valSubstrate').textContent = val;
+                adjustMoleculeCount('substrate', val);
+            } else if (kind === 'comp') {
+                state.numComp = val;
+                document.getElementById('valComp').textContent = val;
+                adjustMoleculeCount('comp', val);
+            } else if (kind === 'noncomp') {
+                state.numNonComp = val;
+                document.getElementById('valNonComp').textContent = val;
+                adjustMoleculeCount('noncomp', val);
+            }
+
+            updateConceptCallout();
+        }
+
+        function adjustMoleculeCount(type, targetTotal) {
+            // Count free + currently bound of this type
+            let boundCount = 0;
+            state.enzymes.forEach(e => {
+                if (type === 'substrate' && e.activeOccupant === 'substrate') boundCount++;
+                if (type === 'comp' && e.activeOccupant === 'comp') boundCount++;
+                if (type === 'noncomp' && e.allostericOccupant === 'noncomp') boundCount++;
+            });
+
+            const freeList = state.molecules.filter(m => m.type === type);
+            let currentTotal = boundCount + freeList.length;
+
+            while (currentTotal < targetTotal) {
+                state.molecules.push(createMolecule(type));
+                currentTotal++;
+            }
+            while (currentTotal > targetTotal) {
+                const idx = state.molecules.findIndex(m => m.type === type);
+                if (idx !== -1) {
+                    state.molecules.splice(idx, 1);
+                    currentTotal--;
+                } else {
+                    // Unbind from an enzyme if no free ones left
+                    const eWithType = state.enzymes.find(e =>
+                        (type === 'noncomp' && e.allostericOccupant === 'noncomp') ||
+                        (e.activeOccupant === type)
+                    );
+                    if (eWithType) {
+                        if (type === 'noncomp') eWithType.allostericOccupant = null;
+                        else eWithType.activeOccupant = null;
+                        currentTotal--;
+                    } else break;
+                }
+            }
+        }
+
+        // --- Inject +15 Substrate Burst ---
+        function injectSubstrateBurst() {
+            const newTarget = Math.min(80, state.numSubstrates + 15);
+            const added = newTarget - state.numSubstrates;
+            state.numSubstrates = newTarget;
+            document.getElementById('sliderSubstrate').value = newTarget;
+            document.getElementById('valSubstrate').textContent = newTarget;
+
+            const w = simCanvas.width / (window.devicePixelRatio || 1);
+            const h = simCanvas.height / (window.devicePixelRatio || 1);
+            for (let i = 0; i < Math.max(10, added); i++) {
+                state.molecules.push(createMolecule('substrate', w * 0.5 + (Math.random() - 0.5) * 80, h * 0.5 + (Math.random() - 0.5) * 80));
+            }
+            state.floatingEffects.push({
+                x: w * 0.5,
+                y: h * 0.25,
+                text: '+ SUBSTRATE BURST INJECTED!',
+                color: '#38bdf8',
+                life: 55
+            });
+            updateConceptCallout();
+        }
+
+        // --- Scenario Presets ---
+        function loadPreset(presetName) {
+            document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+            const btn = document.getElementById(`preset-${presetName}`);
+            if (btn) btn.classList.add('active');
+
+            if (presetName === 'normal') {
+                setSliders(6, 35, 0, 0);
+            } else if (presetName === 'competitive') {
+                setSliders(6, 25, 25, 0);
+            } else if (presetName === 'overcome') {
+                setSliders(6, 75, 20, 0);
+            } else if (presetName === 'noncompetitive') {
+                setSliders(6, 35, 0, 14);
+            }
+            initSimulation();
+        }
+
+        function setSliders(e, s, c, nc) {
+            state.numEnzymes = e;
+            state.numSubstrates = s;
+            state.numComp = c;
+            state.numNonComp = nc;
+
+            document.getElementById('sliderEnzyme').value = e;
+            document.getElementById('valEnzyme').textContent = e;
+            document.getElementById('sliderSubstrate').value = s;
+            document.getElementById('valSubstrate').textContent = s;
+            document.getElementById('sliderComp').value = c;
+            document.getElementById('valComp').textContent = c;
+            document.getElementById('sliderNonComp').value = nc;
+            document.getElementById('valNonComp').textContent = nc;
+        }
+
+        // --- AP Biology Dynamic Concept Explanation ---
+        function updateConceptCallout() {
+            // Concept discussion box removed to keep focus on the interactive model
+        }
+
+        function switchGraphView(graphType) {
+            const prodPanel = document.getElementById('panelProductGraph');
+            const mmPanel = document.getElementById('panelMMGraph');
+
+            if (graphType === 'product') {
+                prodPanel.classList.remove('hidden');
+                mmPanel.classList.add('hidden');
+            } else {
+                prodPanel.classList.add('hidden');
+                mmPanel.classList.remove('hidden');
+            }
+            resizeAllCanvases();
+        }
+
+        // --- Physics & Reaction Update Loop (Population View) ---
+        function updatePopulationPhysics() {
+            const w = simCanvas.width / (window.devicePixelRatio || 1);
+            const h = simCanvas.height / (window.devicePixelRatio || 1);
+            const dt = state.simSpeed;
+
+            state.simTime += (1 / 60) * dt;
+
+            // 1. Update Enzymes
+            state.enzymes.forEach((e, idx) => {
+                e.x += e.vx * dt;
+                e.y += e.vy * dt;
+                e.angle += e.vAngle * dt;
+
+                // Wall collisions
+                const pad = e.r + 8;
+                if (e.x < pad) { e.x = pad; e.vx = Math.abs(e.vx); }
+                if (e.x > w - pad) { e.x = w - pad; e.vx = -Math.abs(e.vx); }
+                if (e.y < pad) { e.y = pad; e.vy = Math.abs(e.vy); }
+                if (e.y > h - pad) { e.y = h - pad; e.vy = -Math.abs(e.vy); }
+
+                // Soft enzyme-enzyme repulsion so they don't overlap
+                for (let j = idx + 1; j < state.enzymes.length; j++) {
+                    const e2 = state.enzymes[j];
+                    const dx = e2.x - e.x;
+                    const dy = e2.y - e.y;
+                    const dist = Math.hypot(dx, dy);
+                    const minDist = e.r + e2.r + 12;
+                    if (dist > 0 && dist < minDist) {
+                        const push = (minDist - dist) * 0.03;
+                        const nx = dx / dist;
+                        const ny = dy / dist;
+                        e.x -= nx * push;
+                        e.y -= ny * push;
+                        e2.x += nx * push;
+                        e2.y += ny * push;
+                    }
+                }
+
+                // Smoothly morph Active Site based on Allosteric occupancy
+                const targetMorph = e.allostericOccupant === 'noncomp' ? 1.0 : 0.0;
+                e.morphFactor += (targetMorph - e.morphFactor) * 0.14 * dt;
+
+                if (e.catalysisFlash > 0) e.catalysisFlash = Math.max(0, e.catalysisFlash - 0.05 * dt);
+
+                // Handle Allosteric Non-Competitive Inhibitor duration (reversible binding)
+                if (e.allostericOccupant === 'noncomp') {
+                    e.allostericTimer += dt;
+                    if (e.allostericTimer >= e.allostericMaxTime) {
+                        e.allostericOccupant = null;
+                        e.allostericTimer = 0;
+                        // Eject from rear allosteric site
+                        const backX = e.x - Math.cos(e.angle) * (e.r + 10);
+                        const backY = e.y - Math.sin(e.angle) * (e.r + 10);
+                        const released = createMolecule('noncomp', backX, backY);
+                        released.vx = -Math.cos(e.angle) * 2.0;
+                        released.vy = -Math.sin(e.angle) * 2.0;
+                        released.cooldown = 35;
+                        state.molecules.push(released);
+                    }
+                }
+
+                // Handle Active Site Occupant (Substrate or Competitive Inhibitor)
+                if (e.activeOccupant === 'substrate') {
+                    // If non-competitive inhibitor is bound, catalysis is halted/ejected!
+                    if (e.allostericOccupant === 'noncomp') {
+                        e.activeOccupant = null;
+                        e.activeTimer = 0;
+                        const frontX = e.x + Math.cos(e.angle) * (e.r + 8);
+                        const frontY = e.y + Math.sin(e.angle) * (e.r + 8);
+                        const ejectedSub = createMolecule('substrate', frontX, frontY);
+                        ejectedSub.vx = Math.cos(e.angle) * 2.4;
+                        ejectedSub.vy = Math.sin(e.angle) * 2.4;
+                        ejectedSub.cooldown = 25;
+                        state.molecules.push(ejectedSub);
+
+                        state.floatingEffects.push({
+                            x: frontX,
+                            y: frontY,
+                            text: 'Allosteric Ejection!',
+                            color: '#e879f9',
+                            life: 32
+                        });
+                    } else {
+                        e.activeTimer += dt;
+                        if (e.activeTimer >= e.activeMaxTime) {
+                            // CATALYSIS COMPLETE -> Split into Product 1 & Product 2!
+                            e.activeOccupant = null;
+                            e.activeTimer = 0;
+                            e.catalysisFlash = 1.0;
+
+                            const frontX = e.x + Math.cos(e.angle) * (e.r + 6);
+                            const frontY = e.y + Math.sin(e.angle) * (e.r + 6);
+
+                            const p1 = createMolecule('product1', frontX, frontY);
+                            p1.vx = Math.cos(e.angle - 0.45) * 2.6;
+                            p1.vy = Math.sin(e.angle - 0.45) * 2.6;
+
+                            const p2 = createMolecule('product2', frontX, frontY);
+                            p2.vx = Math.cos(e.angle + 0.45) * 2.6;
+                            p2.vy = Math.sin(e.angle + 0.45) * 2.6;
+
+                            state.molecules.push(p1, p2);
+                            state.recentCatalysisTimestamps.push(state.simTime);
+
+                            // If Steady-State mode is checked, automatically replace the consumed substrate
+                            if (state.steadyState) {
+                                state.molecules.push(createMolecule('substrate'));
+                            }
+
+                            state.floatingEffects.push({
+                                x: frontX,
+                                y: frontY - 8,
+                                text: '+2 Product!',
+                                color: '#a3e635',
+                                life: 28
+                            });
+                        }
+                    }
+                } else if (e.activeOccupant === 'comp') {
+                    e.activeTimer += dt;
+                    if (e.activeTimer >= e.activeMaxTime * 1.35) {
+                        // Reversible competitive inhibitor unbinds
+                        e.activeOccupant = null;
+                        e.activeTimer = 0;
+                        const frontX = e.x + Math.cos(e.angle) * (e.r + 10);
+                        const frontY = e.y + Math.sin(e.angle) * (e.r + 10);
+                        const releasedComp = createMolecule('comp', frontX, frontY);
+                        releasedComp.vx = Math.cos(e.angle) * 2.1;
+                        releasedComp.vy = Math.sin(e.angle) * 2.1;
+                        releasedComp.cooldown = 30;
+                        state.molecules.push(releasedComp);
+                    }
+                }
+            });
+
+            // 2. Update Free Molecules & Check Binding Collisions
+            for (let i = state.molecules.length - 1; i >= 0; i--) {
+                const m = state.molecules[i];
+                m.x += m.vx * dt;
+                m.y += m.vy * dt;
+                m.angle += m.vAngle * dt;
+                if (m.cooldown > 0) m.cooldown -= dt;
+
+                // Wall reflection
+                if (m.x < 10) { m.x = 10; m.vx = Math.abs(m.vx); }
+                if (m.x > w - 10) { m.x = w - 10; m.vx = -Math.abs(m.vx); }
+                if (m.y < 10) { m.y = 10; m.vy = Math.abs(m.vy); }
+                if (m.y > h - 10) { m.y = h - 10; m.vy = -Math.abs(m.vy); }
+
+                if (m.cooldown > 0) continue;
+
+                // Check interaction with each enzyme
+                let consumed = false;
+                for (let j = 0; j < state.enzymes.length; j++) {
+                    const e = state.enzymes[j];
+
+                    // Active Site world coordinates (front of enzyme: +cos, +sin)
+                    const activeX = e.x + Math.cos(e.angle) * (e.r * 0.72);
+                    const activeY = e.y + Math.sin(e.angle) * (e.r * 0.72);
+
+                    // Allosteric Site world coordinates (back of enzyme: -cos, -sin)
+                    const alloX = e.x - Math.cos(e.angle) * (e.r * 0.85);
+                    const alloY = e.y - Math.sin(e.angle) * (e.r * 0.85);
+
+                    if (m.type === 'substrate' || m.type === 'comp') {
+                        const distActive = Math.hypot(m.x - activeX, m.y - activeY);
+                        if (distActive < 22) {
+                            // Check if Active Site is deformed by Non-Competitive Inhibitor
+                            if (e.allostericOccupant === 'noncomp' || e.morphFactor > 0.45) {
+                                // Bounce off deformed Active Site!
+                                m.vx = Math.cos(e.angle) * 2.6 + (Math.random() - 0.5);
+                                m.vy = Math.sin(e.angle) * 2.6 + (Math.random() - 0.5);
+                                m.cooldown = 18;
+                                state.floatingEffects.push({
+                                    x: activeX,
+                                    y: activeY,
+                                    text: 'Blocked (Warped Site)',
+                                    color: '#f472b6',
+                                    life: 24
+                                });
+                                break;
+                            } else if (e.activeOccupant === null) {
+                                // Bind into Active Site!
+                                e.activeOccupant = m.type;
+                                e.activeTimer = 0;
+                                state.molecules.splice(i, 1);
+                                consumed = true;
+                                break;
+                            } else {
+                                // Active site already occupied -> elastic bounce
+                                m.vx = -m.vx;
+                                m.vy = -m.vy;
+                                m.cooldown = 12;
+                                if (e.activeOccupant === 'comp' && m.type === 'substrate') {
+                                    state.floatingEffects.push({
+                                        x: activeX,
+                                        y: activeY,
+                                        text: 'Competitive Block!',
+                                        color: '#fbbf24',
+                                        life: 22
+                                    });
+                                }
+                                break;
+                            }
+                        }
+                    } else if (m.type === 'noncomp') {
+                        const distAllo = Math.hypot(m.x - alloX, m.y - alloY);
+                        if (distAllo < 22 && e.allostericOccupant === null) {
+                            e.allostericOccupant = 'noncomp';
+                            e.allostericTimer = 0;
+                            state.molecules.splice(i, 1);
+                            consumed = true;
+                            state.floatingEffects.push({
+                                x: alloX,
+                                y: alloY,
+                                text: 'Allosteric Bind!',
+                                color: '#e879f9',
+                                life: 28
+                            });
+                            break;
+                        }
+                    }
+
+                    // General body bounce if colliding with enzyme side
+                    const distCenter = Math.hypot(m.x - e.x, m.y - e.y);
+                    if (!consumed && distCenter < e.r + 6) {
+                        const nx = (m.x - e.x) / (distCenter || 1);
+                        const ny = (m.y - e.y) / (distCenter || 1);
+                        const spd = Math.hypot(m.vx, m.vy);
+                        m.vx = nx * spd;
+                        m.vy = ny * spd;
+                        m.x = e.x + nx * (e.r + 7);
+                        m.y = e.y + ny * (e.r + 7);
+                    }
+                }
+            }
+
+            // 3. Update Floating Text Effects
+            for (let i = state.floatingEffects.length - 1; i >= 0; i--) {
+                const fx = state.floatingEffects[i];
+                fx.y -= 0.45 * dt;
+                fx.life -= dt;
+                if (fx.life <= 0) state.floatingEffects.splice(i, 1);
+            }
+
+            // 4. Record Product History for Graphing
+            const productPairsCount = Math.floor(state.molecules.filter(m => m.type === 'product1' || m.type === 'product2').length / 2);
+            const lastEntry = state.history[state.history.length - 1];
+            if (!lastEntry || state.simTime - lastEntry.t >= 0.25) {
+                state.history.push({ t: state.simTime, products: productPairsCount });
+                if (state.history.length > 240) state.history.shift();
+            }
+        }
+
+        // --- Drawing Primitives: Enzyme, Substrate, Inhibitors, Products ---
+
+        /**
+         * Renders an Enzyme centered at (x,y) facing `angle`.
+         * - Front (+X in local coords): V-shaped Active Site cutout.
+         *   When `morphFactor` approaches 1 (Allosteric Non-Competitive inhibition),
+         *   the jaws pinch inward/warp so the V-notch turns into a rounded/closed bulge!
+         * - Back (-X in local coords): Concave semicircular Allosteric Site notch.
+         */
+        function drawEnzymeBody(ctx, x, y, r, angle, morphFactor, activeOccupant, allostericOccupant, flashFactor, showSiteLabels) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+
+            // Outer glow when catalyzing or inhibited
+            if (flashFactor > 0.05) {
+                ctx.shadowColor = '#a3e635';
+                ctx.shadowBlur = 22 * flashFactor;
+            } else if (morphFactor > 0.3) {
+                ctx.shadowColor = '#d946ef';
+                ctx.shadowBlur = 14 * morphFactor;
+            }
+
+            // Interpolate color between Emerald (Active) and Purple (Allosterically Inhibited)
+            const fillGrad = ctx.createRadialGradient(-r * 0.2, -r * 0.2, r * 0.1, 0, 0, r * 1.1);
+            if (morphFactor < 0.4) {
+                fillGrad.addColorStop(0, '#10b981');
+                fillGrad.addColorStop(1, '#047857');
+            } else {
+                fillGrad.addColorStop(0, '#9333ea');
+                fillGrad.addColorStop(1, '#581c87');
+            }
+
+            // Active site mouth angle narrows and center vertex pushes outward as morphFactor -> 1
+            const mouthAngle = 0.52 * (1 - morphFactor * 0.68); // radians
+            const notchDepthX = r * 0.22 + morphFactor * (r * 0.62); // morphs from deep V-cutout to closed/bulged front
+
+            ctx.beginPath();
+            // Start at top lip of Active Site
+            const topLipX = Math.cos(mouthAngle) * r;
+            const topLipY = Math.sin(mouthAngle) * r;
+
+            // Arc around top of enzyme to rear Allosteric Site
+            const alloHalfAngle = 0.32;
+            ctx.arc(0, 0, r, mouthAngle, Math.PI - alloHalfAngle, false);
+
+            // Rear Allosteric Site indentation (semicircular pocket on the back of enzyme)
+            const alloCenterX = -Math.cos(alloHalfAngle) * r;
+            const alloSocketR = Math.sin(alloHalfAngle) * r;
+            ctx.arc(alloCenterX, 0, alloSocketR, -Math.PI / 2, Math.PI / 2, true);
+
+            // Continue arc along bottom of enzyme to bottom lip of Active Site
+            ctx.arc(0, 0, r, Math.PI + alloHalfAngle, Math.PI * 2 - mouthAngle, false);
+
+            // Draw Active Site V-notch (or warped closed contour when morphFactor > 0)
+            ctx.lineTo(notchDepthX, 0);
+            ctx.lineTo(topLipX, topLipY);
+            ctx.closePath();
+
+            ctx.fillStyle = fillGrad;
+            ctx.fill();
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = morphFactor > 0.4 ? '#f0abfc' : '#6ee7b7';
+            ctx.stroke();
+
+            // Highlight Active Site Rim
+            ctx.beginPath();
+            ctx.moveTo(Math.cos(-mouthAngle) * r, Math.sin(-mouthAngle) * r);
+            ctx.lineTo(notchDepthX, 0);
+            ctx.lineTo(topLipX, topLipY);
+            ctx.strokeStyle = morphFactor > 0.4 ? '#f43f5e' : '#fef08a';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Draw Bound Occupant inside Active Site (scaled proportionally to enzyme radius r)
+            if (activeOccupant === 'substrate') {
+                drawSubstrateShape(ctx, r * 0.62, 0, r * 0.34, 0);
+            } else if (activeOccupant === 'comp') {
+                drawCompetitiveShape(ctx, r * 0.62, 0, r * 0.35, 0);
+            }
+
+            // Draw Bound Non-Competitive Inhibitor inside Allosteric Site (scaled proportionally to enzyme radius r)
+            if (allostericOccupant === 'noncomp') {
+                drawNonCompetitiveShape(ctx, -r * 0.95, 0, r * 0.29);
+            }
+
+            ctx.restore();
+
+            // Optional Floating Site Labels (drawn unrotated for crisp legibility)
+            if (showSiteLabels) {
+                ctx.save();
+                ctx.font = '600 10px Inter, sans-serif';
+                ctx.textAlign = 'center';
+
+                const actLabelX = x + Math.cos(angle) * (r + 16);
+                const actLabelY = y + Math.sin(angle) * (r + 16);
+                ctx.fillStyle = morphFactor > 0.4 ? '#fda4af' : '#fde047';
+                ctx.fillText(morphFactor > 0.4 ? 'Warped Site' : 'Active Site', actLabelX, actLabelY);
+
+                const alloLabelX = x - Math.cos(angle) * (r + 16);
+                const alloLabelY = y - Math.sin(angle) * (r + 16);
+                ctx.fillStyle = '#f0abfc';
+                ctx.fillText('Allosteric', alloLabelX, alloLabelY);
+                ctx.restore();
+            }
+        }
+
+        // Substrate: Cyan Diamond / Wedge that fits cleanly into the V-Notch Active Site
+        function drawSubstrateShape(ctx, x, y, size, angle) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(-size * 1.15, 0); // Pointed tip fits into V-notch
+            ctx.lineTo(0, -size * 0.78);
+            ctx.lineTo(size * 1.05, 0);
+            ctx.lineTo(0, size * 0.78);
+            ctx.closePath();
+            ctx.fillStyle = '#38bdf8';
+            ctx.fill();
+            ctx.lineWidth = 1.8;
+            ctx.strokeStyle = '#bae6fd';
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Competitive Inhibitor: Amber Wedge with identical V-tip front, blocky notched back
+        function drawCompetitiveShape(ctx, x, y, size, angle) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(-size * 1.15, 0); // Same front tip that fits Active Site!
+            ctx.lineTo(size * 0.2, -size * 0.85);
+            ctx.lineTo(size * 0.95, -size * 0.55);
+            ctx.lineTo(size * 0.65, 0);
+            ctx.lineTo(size * 0.95, size * 0.55);
+            ctx.lineTo(size * 0.2, size * 0.85);
+            ctx.closePath();
+            ctx.fillStyle = '#f59e0b';
+            ctx.fill();
+            ctx.lineWidth = 1.8;
+            ctx.strokeStyle = '#fde68a';
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Non-Competitive Inhibitor: Magenta Rounded Plug that fits the rear Allosteric Socket
+        function drawNonCompetitiveShape(ctx, x, y, radius) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#d946ef';
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#f5d0fe';
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Product 1 & 2: Two distinct bright green/teal spheres released after catalysis
+        function drawProductShape(ctx, x, y, radius, isSecond) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.fillStyle = isSecond ? '#2dd4bf' : '#a3e635';
+            ctx.fill();
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = '#ecfccb';
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Render Population View Canvas ---
+        function renderPopulationCanvas() {
+            const w = simCanvas.width / (window.devicePixelRatio || 1);
+            const h = simCanvas.height / (window.devicePixelRatio || 1);
+
+            simCtx.clearRect(0, 0, w, h);
+
+            // Subtle lab grid background
+            simCtx.strokeStyle = 'rgba(30, 41, 59, 0.55)';
+            simCtx.lineWidth = 1;
+            const gridSize = 36;
+            for (let gx = 0; gx < w; gx += gridSize) {
+                simCtx.beginPath();
+                simCtx.moveTo(gx, 0);
+                simCtx.lineTo(gx, h);
+                simCtx.stroke();
+            }
+            for (let gy = 0; gy < h; gy += gridSize) {
+                simCtx.beginPath();
+                simCtx.moveTo(0, gy);
+                simCtx.lineTo(w, gy);
+                simCtx.stroke();
+            }
+
+            // Draw Free Molecules
+            state.molecules.forEach(m => {
+                if (m.type === 'substrate') drawSubstrateShape(simCtx, m.x, m.y, 9.5, m.angle);
+                else if (m.type === 'comp') drawCompetitiveShape(simCtx, m.x, m.y, 10, m.angle);
+                else if (m.type === 'noncomp') drawNonCompetitiveShape(simCtx, m.x, m.y, 8.5);
+                else if (m.type === 'product1') drawProductShape(simCtx, m.x, m.y, 6.5, false);
+                else if (m.type === 'product2') drawProductShape(simCtx, m.x, m.y, 6.5, true);
+            });
+
+            // Draw Enzymes
+            state.enzymes.forEach(e => {
+                drawEnzymeBody(
+                    simCtx,
+                    e.x,
+                    e.y,
+                    e.r,
+                    e.angle,
+                    e.morphFactor,
+                    e.activeOccupant,
+                    e.allostericOccupant,
+                    e.catalysisFlash,
+                    state.showLabels
+                );
+
+                // Catalysis progress arc around E-S complex
+                if (e.activeOccupant === 'substrate') {
+                    const pct = Math.min(1, e.activeTimer / e.activeMaxTime);
+                    simCtx.beginPath();
+                    simCtx.arc(e.x, e.y, e.r + 6, -Math.PI / 2, -Math.PI / 2 + pct * Math.PI * 2);
+                    simCtx.strokeStyle = '#38bdf8';
+                    simCtx.lineWidth = 2.5;
+                    simCtx.stroke();
+                }
+            });
+
+            // Draw Floating Reaction Feedback Labels
+            state.floatingEffects.forEach(fx => {
+                simCtx.save();
+                simCtx.font = '700 11px Inter, sans-serif';
+                simCtx.fillStyle = fx.color;
+                simCtx.globalAlpha = Math.min(1, fx.life / 15);
+                simCtx.textAlign = 'center';
+                simCtx.fillText(fx.text, fx.x, fx.y);
+                simCtx.restore();
+            });
+        }
+
+        // --- Step-by-Step Molecular Inspector Mode (Single Zoomed-In Enzyme) ---
+        function initInspectorScenario() {
+            state.inspector.timer = 0;
+            state.inspector.enzymeMorph = 0;
+        }
+
+        function setInspectorScenario(scen) {
+            state.inspectorScenario = scen;
+            initInspectorScenario();
+
+            // Update Inspector Button Styles
+            const b1 = document.getElementById('inspBtn1');
+            const b2 = document.getElementById('inspBtn2');
+            const b3 = document.getElementById('inspBtn3');
+            b1.className = scen === 'normal'
+                ? 'px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow'
+                : 'px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-800 text-emerald-300 hover:bg-slate-700';
+            b2.className = scen === 'competitive'
+                ? 'px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 shadow'
+                : 'px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-800 text-amber-300 hover:bg-slate-700';
+            b3.className = scen === 'noncompetitive'
+                ? 'px-2.5 py-1 rounded-lg text-xs font-bold bg-fuchsia-600 text-white shadow'
+                : 'px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-800 text-fuchsia-300 hover:bg-slate-700';
+        }
+
+        function updateAndRenderInspector() {
+            const w = simCanvas.width / (window.devicePixelRatio || 1);
+            const h = simCanvas.height / (window.devicePixelRatio || 1);
+            const dt = state.simSpeed;
+
+            if (state.running) {
+                state.inspector.timer = (state.inspector.timer + dt * 0.9) % 360;
+            }
+            const t = state.inspector.timer;
+
+            simCtx.clearRect(0, 0, w, h);
+
+            // Background radial spotlight
+            const bgGrad = simCtx.createRadialGradient(w * 0.45, h * 0.52, 20, w * 0.45, h * 0.52, Math.max(w, h) * 0.65);
+            bgGrad.addColorStop(0, '#1e293b');
+            bgGrad.addColorStop(1, '#020617');
+            simCtx.fillStyle = bgGrad;
+            simCtx.fillRect(0, 0, w, h);
+
+            const ex = w * 0.44;
+            const ey = h * 0.54;
+            const er = Math.min(w, h) * 0.22; // Large zoomed-in enzyme radius
+
+            let stepHeading = '';
+            let stepDetail = '';
+            let morph = 0;
+            let flash = 0;
+
+            if (state.inspectorScenario === 'normal') {
+                // 360-tick cycle for Normal Catalysis
+                if (t < 110) {
+                    const p = t / 110;
+                    stepHeading = 'Step 1: Substrate Approaches Active Site';
+                    stepDetail = 'Substrate shape is complementary to the uninhibited V-shaped Active Site.';
+                    const sx = ex + er * 2.3 - p * (er * 1.68);
+                    drawEnzymeBody(simCtx, ex, ey, er, 0, 0, null, null, 0, false);
+                    drawSubstrateShape(simCtx, sx, ey, er * 0.34, 0);
+                } else if (t < 230) {
+                    stepHeading = 'Step 2: Enzyme-Substrate (E-S) Complex & Catalysis';
+                    stepDetail = 'Induced fit stabilizes the transition state and lowers activation energy (Ea).';
+                    flash = Math.sin(((t - 110) / 120) * Math.PI) * 0.8;
+                    drawEnzymeBody(simCtx, ex, ey, er, 0, 0, 'substrate', null, flash, false);
+                } else {
+                    const p = (t - 230) / 130;
+                    stepHeading = 'Step 3: Products Released (P₁ + P₂) & Enzyme Recycled';
+                    stepDetail = 'Chemical bonds are broken; Products depart and the Active Site is ready again.';
+                    drawEnzymeBody(simCtx, ex, ey, er, 0, 0, null, null, (1 - p) * 0.6, false);
+                    drawProductShape(simCtx, ex + er * 0.62 + p * er * 1.6, ey - p * er * 0.8, er * 0.22, false);
+                    drawProductShape(simCtx, ex + er * 0.62 + p * er * 1.6, ey + p * er * 0.8, er * 0.22, true);
+                }
+            } else if (state.inspectorScenario === 'competitive') {
+                // 360-tick cycle for Competitive Inhibition
+                if (t < 100) {
+                    const p = t / 100;
+                    stepHeading = 'Step 1: Competitive Inhibitor Races for Active Site';
+                    stepDetail = 'Notice how the amber Competitive Inhibitor mimics the front tip of the Substrate.';
+                    drawEnzymeBody(simCtx, ex, ey, er, 0, 0, null, null, 0, false);
+                    drawCompetitiveShape(simCtx, ex + er * 2.08 - p * (er * 1.46), ey - (1 - p) * 25, er * 0.35, 0);
+                    drawSubstrateShape(simCtx, ex + er * 2.5 - p * (er * 0.8), ey + 45, er * 0.34, 0);
+                } else if (t < 260) {
+                    const p = (t - 100) / 160;
+                    stepHeading = 'Step 2: Active Site Blocked! Substrate Bounces Off';
+                    stepDetail = 'While the Competitive Inhibitor occupies the Active Site, Substrate cannot bind.';
+                    drawEnzymeBody(simCtx, ex, ey, er, 0, 0, 'comp', null, 0, false);
+                    // Substrate approaches and bounces away at p = 0.45
+                    let sx, sy;
+                    if (p < 0.45) {
+                        const sp = p / 0.45;
+                        sx = ex + er * 1.7 - sp * (er * 0.65);
+                        sy = ey + 45 * (1 - sp);
+                    } else {
+                        const sp = (p - 0.45) / 0.55;
+                        sx = ex + er * 1.05 + sp * (er * 1.4);
+                        sy = ey + sp * 75;
+                        // Bounce label
+                        simCtx.fillStyle = '#fbbf24';
+                        simCtx.font = '700 13px Inter, sans-serif';
+                        simCtx.fillText('✗ Active Site Occupied!', ex + er * 1.35, ey - 28);
+                    }
+                    drawSubstrateShape(simCtx, sx, sy, er * 0.34, 0);
+                } else {
+                    const p = (t - 260) / 100;
+                    stepHeading = 'Step 3: Reversible Unbinding of Competitive Inhibitor';
+                    stepDetail = 'Because binding is reversible, adding high [Substrate] increases the chance S binds next!';
+                    drawEnzymeBody(simCtx, ex, ey, er, 0, 0, null, null, 0, false);
+                    drawCompetitiveShape(simCtx, ex + er * 0.62 + p * er * 1.6, ey - p * 40, er * 0.35, 0);
+                }
+            } else if (state.inspectorScenario === 'noncompetitive') {
+                // 360-tick cycle for Non-Competitive Allosteric Inhibition
+                if (t < 95) {
+                    const p = t / 95;
+                    stepHeading = 'Step 1: Non-Competitive Inhibitor Targets Allosteric Site';
+                    stepDetail = 'It does NOT bind the Active Site; it approaches the rear Allosteric Site.';
+                    drawEnzymeBody(simCtx, ex, ey, er, 0, 0, null, null, 0, false);
+                    drawNonCompetitiveShape(simCtx, ex - er * 2.1 + p * (er * 1.15), ey, er * 0.29);
+                    drawSubstrateShape(simCtx, ex + er * 2.2, ey, er * 0.34, 0);
+                } else if (t < 170) {
+                    const p = (t - 95) / 75;
+                    morph = p;
+                    stepHeading = 'Step 2: Allosteric Binding Triggers Conformational Change!';
+                    stepDetail = 'Watch the Active Site jaws warp and close as the enzyme changes 3D conformation.';
+                    drawEnzymeBody(simCtx, ex, ey, er, 0, morph, null, 'noncomp', 0, false);
+                    drawSubstrateShape(simCtx, ex + er * 2.2 - p * (er * 0.5), ey, er * 0.34, 0);
+                } else {
+                    const p = (t - 170) / 190;
+                    morph = 1.0;
+                    stepHeading = 'Step 3: Warped Active Site Rejects Substrate (Cannot Fit!)';
+                    stepDetail = 'Even if you flood the cell with more Substrate, it cannot fit the deformed Active Site (↓ Vmax).';
+                    drawEnzymeBody(simCtx, ex, ey, er, 0, morph, null, 'noncomp', 0, false);
+
+                    let sx, sy;
+                    if (p < 0.35) {
+                        const sp = p / 0.35;
+                        sx = ex + er * 1.7 - sp * (er * 0.58);
+                        sy = ey;
+                    } else {
+                        const sp = (p - 0.35) / 0.65;
+                        sx = ex + er * 1.12 + sp * (er * 1.4);
+                        sy = ey - sp * 70;
+                        simCtx.fillStyle = '#f472b6';
+                        simCtx.font = '700 13px Inter, sans-serif';
+                        simCtx.fillText('✗ Shape Mismatch (Conformational Change)!', ex + er * 0.9, ey + 55);
+                    }
+                    drawSubstrateShape(simCtx, sx, sy, er * 0.34, 0);
+                }
+            }
+
+            // Draw Clear Anatomical Callout Pointers on Zoomed Enzyme
+            simCtx.save();
+            simCtx.font = '700 12px Inter, sans-serif';
+            // Allosteric pointer
+            simCtx.strokeStyle = '#e879f9';
+            simCtx.fillStyle = '#f5d0fe';
+            simCtx.beginPath();
+            simCtx.moveTo(ex - er * 0.85, ey - er * 0.3);
+            simCtx.lineTo(ex - er * 1.25, ey - er * 0.95);
+            simCtx.stroke();
+            simCtx.textAlign = 'center';
+            simCtx.fillText('Allosteric Site (Rear)', ex - er * 1.25, ey - er * 1.05);
+
+            // Active site pointer
+            simCtx.strokeStyle = '#fde047';
+            simCtx.fillStyle = '#fef08a';
+            simCtx.beginPath();
+            simCtx.moveTo(ex + er * 0.65, ey - er * 0.35);
+            simCtx.lineTo(ex + er * 1.05, ey - er * 0.95);
+            simCtx.stroke();
+            simCtx.fillText('Active Site (Front)', ex + er * 1.05, ey - er * 1.05);
+            simCtx.restore();
+
+            // Draw Bottom Caption Banner inside Inspector Canvas
+            simCtx.save();
+            simCtx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+            simCtx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+            simCtx.lineWidth = 1;
+            const boxH = 58;
+            simCtx.fillRect(14, h - boxH - 12, w - 28, boxH);
+            simCtx.strokeRect(14, h - boxH - 12, w - 28, boxH);
+
+            simCtx.fillStyle = '#38bdf8';
+            simCtx.font = '700 13px Inter, sans-serif';
+            simCtx.fillText(stepHeading, 28, h - boxH + 12);
+
+            simCtx.fillStyle = '#e2e8f0';
+            simCtx.font = '500 12px Inter, sans-serif';
+            simCtx.fillText(stepDetail, 28, h - boxH + 34);
+            simCtx.restore();
+        }
+
+        // --- Update HUD Counters & Enzyme Occupancy Bar ---
+        function updateHUDStats() {
+            const freeSub = state.molecules.filter(m => m.type === 'substrate').length;
+            const totalProds = Math.floor(state.molecules.filter(m => m.type === 'product1' || m.type === 'product2').length / 2);
+
+            // Rolling catalysis rate over last 4 seconds
+            const cutoff = state.simTime - 4.0;
+            state.recentCatalysisTimestamps = state.recentCatalysisTimestamps.filter(ts => ts >= cutoff);
+            const windowDur = Math.min(4.0, Math.max(0.5, state.simTime));
+            const currentRate = (state.recentCatalysisTimestamps.length / windowDur).toFixed(1);
+
+            document.getElementById('simTimerDisplay').textContent = `t = ${state.simTime.toFixed(1)}s`;
+            document.getElementById('countSubstrate').textContent = freeSub;
+            document.getElementById('countProduct').textContent = totalProds;
+            document.getElementById('countRate').textContent = `${currentRate} /s`;
+
+            // Enzyme state percentages
+            const totalE = Math.max(1, state.enzymes.length);
+            let freeE = 0, esE = 0, compE = 0, nonCompE = 0;
+
+            state.enzymes.forEach(e => {
+                if (e.allostericOccupant === 'noncomp') nonCompE++;
+                else if (e.activeOccupant === 'substrate') esE++;
+                else if (e.activeOccupant === 'comp') compE++;
+                else freeE++;
+            });
+
+            const pFree = Math.round((freeE / totalE) * 100);
+            const pES = Math.round((esE / totalE) * 100);
+            const pComp = Math.round((compE / totalE) * 100);
+            const pNonComp = Math.max(0, 100 - pFree - pES - pComp);
+
+            document.getElementById('pctFree').textContent = `${pFree}%`;
+            document.getElementById('pctES').textContent = `${pES}%`;
+            document.getElementById('pctComp').textContent = `${pComp}%`;
+            document.getElementById('pctNonComp').textContent = `${pNonComp}%`;
+
+            document.getElementById('barFree').style.width = `${pFree}%`;
+            document.getElementById('barES').style.width = `${pES}%`;
+            document.getElementById('barComp').style.width = `${pComp}%`;
+            document.getElementById('barNonComp').style.width = `${pNonComp}%`;
+        }
+
+        // --- Graph 1: Product Formation vs. Time ---
+        function renderProductGraph() {
+            const w = prodCanvas.width / (window.devicePixelRatio || 1);
+            const h = prodCanvas.height / (window.devicePixelRatio || 1);
+            prodCtx.clearRect(0, 0, w, h);
+
+            const padL = 40, padR = 16, padT = 16, padB = 28;
+            const gw = w - padL - padR;
+            const gh = h - padT - padB;
+
+            // Axes
+            prodCtx.strokeStyle = '#334155';
+            prodCtx.lineWidth = 1.5;
+            prodCtx.beginPath();
+            prodCtx.moveTo(padL, padT);
+            prodCtx.lineTo(padL, padT + gh);
+            prodCtx.lineTo(padL + gw, padT + gh);
+            prodCtx.stroke();
+
+            // Determine max scales
+            const maxTime = Math.max(20, state.simTime, state.baselineHistory ? state.baselineHistory[state.baselineHistory.length - 1]?.t || 20 : 20);
+            let maxProd = Math.max(25, state.numSubstrates);
+            state.history.forEach(pt => { if (pt.products > maxProd) maxProd = pt.products + 5; });
+            if (state.baselineHistory) {
+                state.baselineHistory.forEach(pt => { if (pt.products > maxProd) maxProd = pt.products + 5; });
+            }
+
+            // Grid lines & labels
+            prodCtx.fillStyle = '#94a3b8';
+            prodCtx.font = '500 10px Inter, sans-serif';
+            prodCtx.textAlign = 'right';
+            for (let i = 0; i <= 4; i++) {
+                const yVal = Math.round((maxProd / 4) * i);
+                const yPos = padT + gh - (i / 4) * gh;
+                prodCtx.fillText(yVal, padL - 6, yPos + 3);
+                if (i > 0) {
+                    prodCtx.strokeStyle = 'rgba(51, 65, 85, 0.35)';
+                    prodCtx.beginPath();
+                    prodCtx.moveTo(padL, yPos);
+                    prodCtx.lineTo(padL + gw, yPos);
+                    prodCtx.stroke();
+                }
+            }
+
+            prodCtx.textAlign = 'center';
+            prodCtx.fillText('Time (s)', padL + gw / 2, h - 6);
+
+            // Draw Pinned Baseline Curve if saved
+            if (state.baselineHistory && state.baselineHistory.length > 1) {
+                prodCtx.save();
+                prodCtx.setLineDash([5, 4]);
+                prodCtx.strokeStyle = '#94a3b8';
+                prodCtx.lineWidth = 2;
+                prodCtx.beginPath();
+                state.baselineHistory.forEach((pt, idx) => {
+                    const x = padL + (pt.t / maxTime) * gw;
+                    const y = padT + gh - (pt.products / maxProd) * gh;
+                    if (idx === 0) prodCtx.moveTo(x, y);
+                    else prodCtx.lineTo(x, y);
+                });
+                prodCtx.stroke();
+                prodCtx.restore();
+            }
+
+            // Draw Active Live Curve
+            if (state.history.length > 1) {
+                prodCtx.save();
+                prodCtx.strokeStyle = '#a3e635';
+                prodCtx.lineWidth = 2.5;
+                prodCtx.beginPath();
+                state.history.forEach((pt, idx) => {
+                    const x = padL + (pt.t / maxTime) * gw;
+                    const y = padT + gh - (pt.products / maxProd) * gh;
+                    if (idx === 0) prodCtx.moveTo(x, y);
+                    else prodCtx.lineTo(x, y);
+                });
+                prodCtx.stroke();
+
+                // Glow dot at current tip
+                const last = state.history[state.history.length - 1];
+                const lx = padL + (last.t / maxTime) * gw;
+                const ly = padT + gh - (last.products / maxProd) * gh;
+                prodCtx.fillStyle = '#a3e635';
+                prodCtx.beginPath();
+                prodCtx.arc(lx, ly, 4, 0, Math.PI * 2);
+                prodCtx.fill();
+                prodCtx.restore();
+            }
+        }
+
+        function saveBaselineRun() {
+            state.baselineHistory = state.history.map(pt => ({ ...pt }));
+            document.getElementById('clearBaselineBtn').classList.remove('hidden');
+        }
+
+        function clearBaselineRun() {
+            state.baselineHistory = null;
+            document.getElementById('clearBaselineBtn').classList.add('hidden');
+        }
+
+        // --- Graph 2: Michaelis-Menten Kinetics Curve (V0 vs [S]) ---
+        function renderMichaelisMentenGraph() {
+            const w = mmCanvas.width / (window.devicePixelRatio || 1);
+            const h = mmCanvas.height / (window.devicePixelRatio || 1);
+            mmCtx.clearRect(0, 0, w, h);
+
+            const padL = 42, padR = 18, padT = 18, padB = 28;
+            const gw = w - padL - padR;
+            const gh = h - padT - padB;
+
+            // Theoretical Michaelis-Menten Parameters
+            // Base Vmax scales with [Enzyme]; Base Km = 15
+            const baseVmax = state.numEnzymes * 16.6; // 100 when E=6
+            const baseKm = 15;
+
+            // Competitive inhibitor increases apparent Km: Km_app = Km * (1 + [I_comp]/Ki)
+            const alphaComp = 1 + (state.numComp / 10);
+            const appKm = baseKm * alphaComp;
+
+            // Non-competitive inhibitor decreases apparent Vmax: Vmax_app = Vmax / (1 + [I_noncomp]/Ki_nc)
+            const alphaNonComp = 1 + (state.numNonComp / 8);
+            const appVmax = baseVmax / alphaNonComp;
+
+            // Update Vmax and Km badges
+            const vmaxPct = Math.round((appVmax / (6 * 16.6)) * 100);
+            document.getElementById('statVmax').textContent = `${vmaxPct}%`;
+            document.getElementById('statKm').textContent = `${Math.round(appKm)}`;
+
+            const maxS = 80;
+            const maxY = 115;
+
+            // Draw Axes
+            mmCtx.strokeStyle = '#334155';
+            mmCtx.lineWidth = 1.5;
+            mmCtx.beginPath();
+            mmCtx.moveTo(padL, padT);
+            mmCtx.lineTo(padL, padT + gh);
+            mmCtx.lineTo(padL + gw, padT + gh);
+            mmCtx.stroke();
+
+            mmCtx.fillStyle = '#94a3b8';
+            mmCtx.font = '500 10px Inter, sans-serif';
+            mmCtx.textAlign = 'center';
+            mmCtx.fillText('Substrate Concentration [S]', padL + gw / 2, h - 6);
+
+            mmCtx.save();
+            mmCtx.translate(12, padT + gh / 2);
+            mmCtx.rotate(-Math.PI / 2);
+            mmCtx.fillText('Initial Rate (V₀)', 0, 0);
+            mmCtx.restore();
+
+            // 1. Draw Uninhibited Control Reference Curve (dashed emerald)
+            mmCtx.save();
+            mmCtx.setLineDash([4, 4]);
+            mmCtx.strokeStyle = 'rgba(16, 185, 129, 0.45)';
+            mmCtx.lineWidth = 1.8;
+            mmCtx.beginPath();
+            for (let s = 0; s <= maxS; s += 2) {
+                const v = (baseVmax * s) / (baseKm + s);
+                const x = padL + (s / maxS) * gw;
+                const y = padT + gh - (v / maxY) * gh;
+                if (s === 0) mmCtx.moveTo(x, y);
+                else mmCtx.lineTo(x, y);
+            }
+            mmCtx.stroke();
+            mmCtx.restore();
+
+            // 2. Draw Current Apparent Vmax Horizontal Asymptote Line
+            const vmaxY = padT + gh - (appVmax / maxY) * gh;
+            mmCtx.save();
+            mmCtx.setLineDash([2, 3]);
+            mmCtx.strokeStyle = 'rgba(148, 163, 184, 0.5)';
+            mmCtx.beginPath();
+            mmCtx.moveTo(padL, vmaxY);
+            mmCtx.lineTo(padL + gw, vmaxY);
+            mmCtx.stroke();
+            mmCtx.fillStyle = '#cbd5e1';
+            mmCtx.font = '600 9px JetBrains Mono, monospace';
+            mmCtx.textAlign = 'right';
+            mmCtx.fillText('Vmax', padL + gw - 2, vmaxY - 4);
+            mmCtx.restore();
+
+            // 3. Draw Active Inhibited / Current Kinetics Curve
+            let curveColor = '#10b981'; // Emerald
+            if (state.numComp > 0 && state.numNonComp === 0) curveColor = '#f59e0b'; // Amber
+            else if (state.numNonComp > 0 && state.numComp === 0) curveColor = '#d946ef'; // Magenta
+            else if (state.numComp > 0 && state.numNonComp > 0) curveColor = '#f43f5e'; // Rose
+
+            mmCtx.save();
+            mmCtx.strokeStyle = curveColor;
+            mmCtx.lineWidth = 2.8;
+            mmCtx.beginPath();
+            for (let s = 0; s <= maxS; s += 1) {
+                const v = (appVmax * s) / (appKm + s);
+                const x = padL + (s / maxS) * gw;
+                const y = padT + gh - (v / maxY) * gh;
+                if (s === 0) mmCtx.moveTo(x, y);
+                else mmCtx.lineTo(x, y);
+            }
+            mmCtx.stroke();
+            mmCtx.restore();
+
+            // 4. Mark Apparent Km on X-axis (where V0 = 1/2 Vmax_app)
+            if (appKm <= maxS) {
+                const kmX = padL + (appKm / maxS) * gw;
+                const halfVmaxY = padT + gh - ((appVmax * 0.5) / maxY) * gh;
+                mmCtx.save();
+                mmCtx.setLineDash([2, 2]);
+                mmCtx.strokeStyle = '#fbbf24';
+                mmCtx.beginPath();
+                mmCtx.moveTo(kmX, halfVmaxY);
+                mmCtx.lineTo(kmX, padT + gh);
+                mmCtx.stroke();
+
+                mmCtx.fillStyle = '#fbbf24';
+                mmCtx.font = '700 9px JetBrains Mono, monospace';
+                mmCtx.textAlign = 'center';
+                mmCtx.fillText('Km', kmX, padT + gh + 11);
+                mmCtx.restore();
+            }
+
+            // 5. Plot Live Operating Point Dot for Current [Substrate] Slider
+            const curS = Math.min(maxS, state.numSubstrates);
+            const curV = (appVmax * curS) / (appKm + curS);
+            const ptX = padL + (curS / maxS) * gw;
+            const ptY = padT + gh - (curV / maxY) * gh;
+
+            mmCtx.save();
+            mmCtx.fillStyle = '#38bdf8';
+            mmCtx.shadowColor = '#38bdf8';
+            mmCtx.shadowBlur = 10;
+            mmCtx.beginPath();
+            mmCtx.arc(ptX, ptY, 5.5, 0, Math.PI * 2);
+            mmCtx.fill();
+            mmCtx.strokeStyle = '#ffffff';
+            mmCtx.lineWidth = 1.8;
+            mmCtx.stroke();
+
+            mmCtx.shadowBlur = 0;
+            mmCtx.fillStyle = '#bae6fd';
+            mmCtx.font = '700 10px Inter, sans-serif';
+            mmCtx.textAlign = curS > 60 ? 'right' : 'left';
+            mmCtx.fillText(`Current [S]=${curS}`, ptX + (curS > 60 ? -8 : 8), ptY - 7);
+            mmCtx.restore();
+        }
+
+        // --- UI Controls & Mode Toggles ---
+        function switchViewMode(mode) {
+            state.viewMode = mode;
+            const popBtn = document.getElementById('modePopulationBtn');
+            const inspBtn = document.getElementById('modeInspectorBtn');
+            const inspToolbar = document.getElementById('inspectorToolbar');
+            const badge = document.getElementById('canvasModeBadge');
+            const counters = document.getElementById('liveCountersOverlay');
+
+            if (mode === 'population') {
+                popBtn.className = "flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-sky-600 text-white shadow";
+                inspBtn.className = "flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-400 hover:text-white";
+                inspToolbar.classList.add('hidden');
+                counters.classList.remove('hidden');
+                badge.textContent = "Live Reaction Chamber";
+            } else {
+                inspBtn.className = "flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-sky-600 text-white shadow";
+                popBtn.className = "flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-400 hover:text-white";
+                inspToolbar.classList.remove('hidden');
+                counters.classList.add('hidden');
+                badge.textContent = "Single-Enzyme Molecular Inspector";
+
+                // Sync inspector default tab with current active inhibitors
+                if (state.numNonComp > 0) setInspectorScenario('noncompetitive');
+                else if (state.numComp > 0) setInspectorScenario('competitive');
+                else setInspectorScenario('normal');
+            }
+            resizeAllCanvases();
+        }
+
+        function togglePlayPause() {
+            state.running = !state.running;
+            const btn = document.getElementById('playPauseBtn');
+            const icon = document.getElementById('playPauseIcon');
+            const text = document.getElementById('playPauseText');
+
+            if (state.running) {
+                btn.className = "flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs sm:text-sm shadow transition";
+                icon.textContent = "⏸";
+                text.textContent = "Pause";
+            } else {
+                btn.className = "flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs sm:text-sm shadow transition";
+                icon.textContent = "▶";
+                text.textContent = "Resume";
+            }
+        }
+
+        function resetReaction() {
+            initSimulation();
+        }
+
+        function changeSimSpeed(val) {
+            state.simSpeed = parseFloat(val);
+        }
+
+        function toggleSiteLabels(checked) {
+            state.showLabels = checked;
+        }
+
+        function toggleSteadyState(checked) {
+            state.steadyState = checked;
+        }
+
+        // --- Master Animation Loop ---
+        function animateLoop() {
+            if (state.viewMode === 'population') {
+                if (state.running) {
+                    updatePopulationPhysics();
+                }
+                renderPopulationCanvas();
+            } else {
+                updateAndRenderInspector();
+            }
+
+            updateHUDStats();
+            renderProductGraph();
+            renderMichaelisMentenGraph();
+
+            requestAnimationFrame(animateLoop);
+        }
+
+        window.onload = function () {
+            initSimulation();
+            animateLoop();
+        };
+    </script>
+</body>
+</html>
